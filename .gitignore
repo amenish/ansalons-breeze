@@ -1,3 +1,8 @@
 .PROJECT.md
-dist/
 theme.conf.user
+# artefactos de makepkg
+dist/
+src/
+pkg/
+sddm-theme-ansalon/
+*.pkg.tar.*
