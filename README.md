@@ -1,5 +1,7 @@
 # Ansalon — tema SDDM
 
+![Pantalla de inicio de sesión Ansalon](preview.png)
+
 Tema para la pantalla de inicio de sesión [SDDM](https://github.com/sddm/sddm),
 derivado del tema Breeze de KDE Plasma y adaptado a Qt 6.
 
@@ -31,7 +33,7 @@ Para desinstalarlo: `sudo pacman -R sddm-theme-ansalon`.
 
 ```sh
 sudo mkdir -p /usr/share/sddm/themes/ansalon/faces
-sudo cp *.qml metadata.desktop theme.conf default-logo.svg 5120x2880.png \
+sudo cp *.qml metadata.desktop theme.conf default-logo.svg 5120x2880.png preview.png \
   /usr/share/sddm/themes/ansalon/
 sudo cp faces/.face.icon /usr/share/sddm/themes/ansalon/faces/
 sudo cp sddm.conf.d/ansalon.conf /etc/sddm.conf.d/
@@ -68,7 +70,7 @@ solo las claves que definas.
 1. Cambia `Version=` en `metadata.desktop` y `pkgver=` en `PKGBUILD`.
 2. Haz commit, crea la etiqueta y súbela:
    ```sh
-   git tag v1.1 && git push origin main v1.1
+   git tag v1.2 && git push origin main v1.2
    ```
 
 ## Licencia y créditos
