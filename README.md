@@ -33,7 +33,7 @@ Para desinstalarlo: `sudo pacman -R sddm-theme-ansalon`.
 
 ```sh
 sudo mkdir -p /usr/share/sddm/themes/ansalon/faces
-sudo cp *.qml metadata.desktop theme.conf default-logo.svg 5120x2880.png preview.png \
+sudo cp *.qml metadata.desktop theme.conf default-logo.svg 5120x2880.png bosque_*.png preview.png \
   /usr/share/sddm/themes/ansalon/
 sudo cp faces/.face.icon /usr/share/sddm/themes/ansalon/faces/
 sudo cp sddm.conf.d/ansalon.conf /etc/sddm.conf.d/
@@ -60,6 +60,15 @@ Las opciones están en `theme.conf` (`[General]`):
 | `showlogo`   | `shown` / `hidden`              | Muestra el logo                      |
 | `logo`       | ruta a imagen                   | Logo                                 |
 | `fontSize`   | número                          | Tamaño de letra base                 |
+| `timeBackground` | `true` / `false`            | Cambia el fondo según la hora; con `false` se usa `background` |
+| `backgroundDawn`, `backgroundDay`, `backgroundDusk`, `backgroundNight` | ruta a imagen | Fondo de amanecer, día, atardecer y noche |
+| `dawnHour`, `dayHour`, `duskHour`, `nightHour` | hora (0-23) | Hora a la que empieza cada franja (6, 9, 18 y 21) |
+| `entryDuration` | milisegundos                 | Duración de cada fundido de entrada (primero el reloj, después el formulario); `0` lo desactiva |
+| `blurOnInteraction` | `true` / `false`         | El fondo solo se desenfoca al elegir avatar o teclear; con `false` queda siempre nítido |
+| `clockOffset` | % del alto de pantalla         | Baja (positivo) o sube (negativo) el reloj |
+| `loginOffset` | % del alto de pantalla         | Baja o sube avatares y formulario, que se mueven juntos |
+
+Los botones de suspender, reiniciar y apagar van fijos en el borde inferior.
 
 Para no tocar el archivo del paquete, crea `theme.conf.user` junto a
 `theme.conf` en el directorio del tema: SDDM lo lee encima y sobrescribe

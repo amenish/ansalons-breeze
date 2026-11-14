@@ -11,20 +11,94 @@ FocusScope {
 
     property var sceneBackgroundType
     property alias sceneBackgroundColor: sceneColorBackground.color
-    property alias sceneBackgroundImage: sceneImageBackground.source
+    property url sceneBackgroundImage
+
+    // Fundido cruzado: la imagen nueva se carga en la capa oculta, encima de
+    // la visible, y aparece gradualmente cuando ya está lista.
+    property Image capaVisible: capaA
+    readonly property Image capaOculta: capaVisible === capaA ? capaB : capaA
+    property string fondoCargado: ""
+
+    onSceneBackgroundImageChanged: cargarFondo()
+    Component.onCompleted: cargarFondo()
+
+    function cargarFondo() {
+        const nuevo = sceneBackgroundImage.toString();
+        if (nuevo === fondoCargado) {
+            return;
+        }
+        if (fundido.running) {
+            fundido.stop();
+            terminarFundido();
+        }
+        const primeraCarga = fondoCargado === "";
+        fondoCargado = nuevo;
+        if (primeraCarga) {
+            capaVisible.source = sceneBackgroundImage;
+            return;
+        }
+        capaOculta.opacity = 0;
+        capaOculta.z = 1;
+        capaVisible.z = 0;
+        capaOculta.source = sceneBackgroundImage;
+        iniciarFundidoSiLista();
+    }
+
+    function iniciarFundidoSiLista() {
+        if (capaOculta.status === Image.Ready && capaOculta.opacity === 0 && !fundido.running) {
+            fundido.start();
+        }
+    }
+
+    function terminarFundido() {
+        const vieja = capaVisible;
+        const nueva = capaOculta;
+        nueva.opacity = 1;
+        capaVisible = nueva;
+        vieja.opacity = 0;
+        vieja.source = "";
+    }
 
     Rectangle {
         id: sceneColorBackground
         anchors.fill: parent
     }
 
-    Image {
+    Item {
         id: sceneImageBackground
         anchors.fill: parent
-        sourceSize.width: parent.width
-        sourceSize.height: parent.height
-        fillMode: Image.PreserveAspectCrop
-        smooth: true;
+
+        Image {
+            id: capaA
+            anchors.fill: parent
+            sourceSize.width: parent.width
+            sourceSize.height: parent.height
+            fillMode: Image.PreserveAspectCrop
+            smooth: true
+            onStatusChanged: if (sceneBackground.capaOculta === capaA) sceneBackground.iniciarFundidoSiLista()
+        }
+
+        Image {
+            id: capaB
+            anchors.fill: parent
+            sourceSize.width: parent.width
+            sourceSize.height: parent.height
+            fillMode: Image.PreserveAspectCrop
+            smooth: true
+            opacity: 0
+            onStatusChanged: if (sceneBackground.capaOculta === capaB) sceneBackground.iniciarFundidoSiLista()
+        }
+
+        NumberAnimation {
+            id: fundido
+            target: sceneBackground.capaOculta
+            property: "opacity"
+            from: 0
+            to: 1
+            duration: 2000
+            easing.type: Easing.InOutQuad
+            onFinished: sceneBackground.terminarFundido()
+        }
     }
 
     states: [

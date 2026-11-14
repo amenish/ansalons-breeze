@@ -30,6 +30,47 @@ Item {
 
     property string notificationMessage
 
+    // Opciones numéricas de theme.conf (llegan como texto)
+    function opcionNumerica(valor, porDefecto) {
+        const n = parseFloat(valor);
+        return isNaN(n) ? porDefecto : n;
+    }
+
+    readonly property int duracionEntrada: Math.max(0, opcionNumerica(config.entryDuration, 1200))
+    // Desplazamientos verticales, en % del alto de pantalla (positivo = más abajo)
+    readonly property real desplazamientoReloj: height * opcionNumerica(config.clockOffset, 0) / 100
+    readonly property real desplazamientoLogin: height * opcionNumerica(config.loginOffset, 0) / 100
+
+    // Fondo según la hora: amanecer, día, atardecer y noche
+    property int hora: new Date().getHours()
+    readonly property url fondoActual: {
+        if (config.timeBackground !== "true" || config.type !== "image") {
+            return config.background;
+        }
+        const amanecer = opcionNumerica(config.dawnHour, 6);
+        const dia = opcionNumerica(config.dayHour, 9);
+        const atardecer = opcionNumerica(config.duskHour, 18);
+        const noche = opcionNumerica(config.nightHour, 21);
+        let imagen;
+        if (hora >= amanecer && hora < dia) {
+            imagen = config.backgroundDawn;
+        } else if (hora >= dia && hora < atardecer) {
+            imagen = config.backgroundDay;
+        } else if (hora >= atardecer && hora < noche) {
+            imagen = config.backgroundDusk;
+        } else {
+            imagen = config.backgroundNight;
+        }
+        return imagen ? Qt.resolvedUrl(imagen) : config.background;
+    }
+
+    Timer {
+        interval: 60000
+        running: true
+        repeat: true
+        onTriggered: root.hora = new Date().getHours()
+    }
+
     LayoutMirroring.enabled: Qt.application.layoutDirection === Qt.RightToLeft
     LayoutMirroring.childrenInherit: true
 
@@ -48,7 +89,7 @@ Item {
                 x: geometry.x; y: geometry.y; width: geometry.width; height: geometry.height
                 sceneBackgroundType: config.type
                 sceneBackgroundColor: config.color
-                sceneBackgroundImage: config.background
+                sceneBackgroundImage: root.fondoActual
             }
         }
     }
@@ -63,7 +104,30 @@ Item {
         anchors.fill: parent
 
         property bool uiVisible: true
-        property bool blockUI: mainStack.depth > 1 || userListComponent.mainPasswordBox.text.length > 0 || inputPanel.keyboardActive || config.type !== "image"
+        property bool blockUI: mainStack.depth > 1 || userListComponent.mainPasswordBox.text.length > 0 || config.type !== "image"
+
+        // Entrada gradual: la interfaz arranca transparente y aparece tras el primer fotograma
+        property bool arrancado: false
+        property bool entradaEnCurso: true
+
+        // El fondo se ve nítido y solo se desenfoca al elegir avatar o al teclear
+        property bool avatarElegido: false
+        readonly property bool desenfocar: config.blurOnInteraction !== "false" && config.type === "image"
+            && arrancado && uiVisible
+            && (avatarElegido || mainStack.depth > 1 || userListComponent.mainPasswordBox.text.length > 0)
+        property real factorDesenfoque: desenfocar ? 1 : 0
+        Behavior on factorDesenfoque {
+            NumberAnimation {
+                duration: 600
+                easing.type: Easing.InOutQuad
+            }
+        }
+
+        Timer {
+            interval: 100
+            running: true
+            onTriggered: loginScreenRoot.arrancado = true
+        }
 
         hoverEnabled: true
         // Sin esto el greeter no fija cursor y en X11 no se ve el puntero
@@ -72,6 +136,9 @@ Item {
         onPressed: uiVisible = true;
         onPositionChanged: uiVisible = true;
         onUiVisibleChanged: {
+            if (!uiVisible) {
+                avatarElegido = false;
+            }
             if (blockUI) {
                 fadeoutTimer.running = false;
             } else if (uiVisible) {
@@ -104,14 +171,19 @@ Item {
                 }
             }
         }
-        WallpaperFader {
-            visible: config.type === "image"
+        FastBlur {
             anchors.fill: parent
-            state: loginScreenRoot.uiVisible ? "on" : "off"
             source: wallpaper
-            mainStack: mainStack
-            footer: footer
-            clock: clock
+            radius: 50 * loginScreenRoot.factorDesenfoque
+            visible: !softwareRendering && loginScreenRoot.factorDesenfoque > 0
+        }
+
+        // Oscurece el fondo desenfocado para dar contraste al formulario
+        Rectangle {
+            anchors.fill: parent
+            color: "black"
+            opacity: 0.3 * loginScreenRoot.factorDesenfoque
+            visible: opacity > 0
         }
 
         DropShadow {
@@ -124,13 +196,8 @@ Item {
             samples: 15
             spread: 0.2
             color : Qt.rgba(0, 0, 0, 0.7)
-            opacity: loginScreenRoot.uiVisible ? 0 : 1
-            Behavior on opacity {
-                OpacityAnimator {
-                    duration: Kirigami.Units.veryLongDuration * 2
-                    easing.type: Easing.InOutQuad
-                }
-            }
+            // Sombra solo mientras el fondo está nítido, para que el reloj se lea
+            opacity: clock.opacity * (1 - loginScreenRoot.factorDesenfoque)
         }
 
         Clock {
@@ -138,7 +205,8 @@ Item {
             property Item shadow: clockShadow
             visible: y > 0 && config.showClock === "true"
             anchors.horizontalCenter: parent.horizontalCenter
-            y: (userListComponent.userList.y + mainStack.y)/2 - height/2
+            y: userListComponent.userList.y / 2 - height / 2 + root.desplazamientoReloj
+            opacity: 0
             Layout.alignment: Qt.AlignBaseline
         }
 
@@ -148,7 +216,9 @@ Item {
                 left: parent.left
                 right: parent.right
             }
+            y: root.desplazamientoLogin
             height: root.height + Kirigami.Units.gridUnit * 3
+            opacity: 0
 
             // If true (depends on the style and environment variables), hover events are always accepted
             // and propagation stopped. This means the parent MouseArea won't get them and the UI won't be shown.
@@ -204,17 +274,12 @@ Item {
                     return parts.join(" • ");
                 }
 
-                actionItemsVisible: !inputPanel.keyboardActive
-                actionItems: [
-                    PowerButton { powerAction: "suspend" },
-                    PowerButton { powerAction: "reboot" },
-                    PowerButton { powerAction: "poweroff" },
-                    ActionButton {
-                        icon.name: "system-user-prompt"
-                        text: i18ndc("plasma-desktop-sddm-theme", "For switching to a username and password prompt", "Other…")
-                        onClicked: mainStack.push(userPromptComponent)
-                        visible: !userListComponent.showUsernamePrompt
-                    }]
+                // Los botones de acción van en botonesAccion, al pie de la pantalla.
+                // El componente de Breeze necesita al menos un elemento en la lista.
+                actionItemsVisible: false
+                actionItems: [ Item {} ]
+
+                onUserSelected: loginScreenRoot.avatarElegido = true
 
                 onLoginRequest: {
                     root.notificationMessage = ""
@@ -223,6 +288,7 @@ Item {
             }
 
             Behavior on opacity {
+                enabled: !loginScreenRoot.entradaEnCurso
                 OpacityAnimator {
                     duration: Kirigami.Units.longDuration
                 }
@@ -317,17 +383,8 @@ Item {
                     sddm.login(username, password, sessionButton.currentIndex)
                 }
 
-                actionItemsVisible: !inputPanel.keyboardActive
-                actionItems: [
-                    PowerButton { powerAction: "suspend" },
-                    PowerButton { powerAction: "reboot" },
-                    PowerButton { powerAction: "poweroff" },
-                    ActionButton {
-                        icon.name: "system-user-list"
-                        text: i18nd("plasma-desktop-sddm-theme", "List Users")
-                        onClicked: mainStack.pop()
-                    }
-                ]
+                actionItemsVisible: false
+                actionItems: [ Item {} ]
             }
         }
 
@@ -388,32 +445,12 @@ Item {
                 margins: Kirigami.Units.smallSpacing
             }
             spacing: Kirigami.Units.smallSpacing
+            opacity: 0
 
             Behavior on opacity {
+                enabled: !loginScreenRoot.entradaEnCurso
                 OpacityAnimator {
                     duration: Kirigami.Units.longDuration
-                }
-            }
-
-            PlasmaComponents3.ToolButton {
-                id: virtualKeyboardButton
-
-                text: i18ndc("plasma-desktop-sddm-theme", "Button to show/hide virtual keyboard", "Virtual Keyboard")
-                icon.name: inputPanel.keyboardActive ? "input-keyboard-virtual-on" : "input-keyboard-virtual-off"
-                onClicked: {
-                    // Otherwise the password field loses focus and virtual keyboard
-                    // keystrokes get eaten
-                    userListComponent.mainPasswordBox.forceActiveFocus();
-                    inputPanel.showHide()
-                }
-                visible: inputPanel.status === Loader.Ready
-
-                Layout.fillHeight: true
-                containmentMask: Item {
-                    parent: virtualKeyboardButton
-                    anchors.fill: parent
-                    anchors.leftMargin: -footer.anchors.margins
-                    anchors.bottomMargin: -footer.anchors.margins
                 }
             }
 
@@ -430,7 +467,7 @@ Item {
                 containmentMask: Item {
                     parent: keyboardButton
                     anchors.fill: parent
-                    anchors.leftMargin: virtualKeyboardButton.visible ? 0 : -footer.anchors.margins
+                    anchors.leftMargin: -footer.anchors.margins
                     anchors.bottomMargin: -footer.anchors.margins
                 }
             }
@@ -448,8 +485,7 @@ Item {
                 containmentMask: Item {
                     parent: sessionButton
                     anchors.fill: parent
-                    anchors.leftMargin: virtualKeyboardButton.visible || keyboardButton.visible
-                        ? 0 : -footer.anchors.margins
+                    anchors.leftMargin: keyboardButton.visible ? 0 : -footer.anchors.margins
                     anchors.bottomMargin: -footer.anchors.margins
                 }
             }
@@ -460,6 +496,100 @@ Item {
 
             Battery {}
         }
+
+        // Botones de energía y cambio de modo, centrados en el borde inferior
+        Row {
+            id: botonesAccion
+            anchors {
+                horizontalCenter: parent.horizontalCenter
+                bottom: parent.bottom
+                bottomMargin: Kirigami.Units.gridUnit
+            }
+            spacing: Kirigami.Units.largeSpacing
+            opacity: footer.opacity
+            enabled: footer.enabled
+
+            PowerButton { powerAction: "suspend" }
+            PowerButton { powerAction: "reboot" }
+            PowerButton { powerAction: "poweroff" }
+            ActionButton {
+                readonly property bool enLista: mainStack.depth <= 1
+                icon.name: enLista ? "system-user-prompt" : "system-user-list"
+                text: enLista
+                    ? i18ndc("plasma-desktop-sddm-theme", "For switching to a username and password prompt", "Other…")
+                    : i18nd("plasma-desktop-sddm-theme", "List Users")
+                visible: !enLista || !userListComponent.showUsernamePrompt
+                onClicked: enLista ? mainStack.push(userPromptComponent) : mainStack.pop()
+            }
+        }
+
+        // Visibilidad de reloj, formulario y pie. Solo cambia la opacidad:
+        // "inicio" es el arranque (todo transparente), "off" la interfaz
+        // oculta por inactividad.
+        state: !arrancado ? "inicio" : (uiVisible ? "on" : "off")
+        states: [
+            State {
+                name: "inicio"
+            },
+            State {
+                name: "on"
+                PropertyChanges { target: clock; opacity: 1 }
+                PropertyChanges { target: mainStack; opacity: 1 }
+                PropertyChanges { target: footer; opacity: 1 }
+            },
+            State {
+                name: "off"
+                PropertyChanges { target: clock; opacity: 0 }
+                PropertyChanges { target: mainStack; opacity: 0 }
+                PropertyChanges { target: footer; opacity: 0 }
+            }
+        ]
+        transitions: [
+            Transition {
+                from: "inicio"
+                to: "on"
+                onRunningChanged: {
+                    if (!running) {
+                        loginScreenRoot.entradaEnCurso = false;
+                    }
+                }
+                // Primero el reloj, después formulario y pie
+                SequentialAnimation {
+                    NumberAnimation {
+                        target: clock
+                        property: "opacity"
+                        duration: root.duracionEntrada
+                        easing.type: Easing.InOutQuad
+                    }
+                    NumberAnimation {
+                        targets: [mainStack, footer]
+                        property: "opacity"
+                        duration: root.duracionEntrada
+                        easing.type: Easing.InOutQuad
+                    }
+                }
+            },
+            Transition {
+                from: "on"
+                to: "off"
+                NumberAnimation {
+                    targets: [mainStack, footer, clock]
+                    property: "opacity"
+                    duration: Kirigami.Units.veryLongDuration
+                    easing.type: Easing.InOutQuad
+                }
+            },
+            Transition {
+                from: "off"
+                to: "on"
+                NumberAnimation {
+                    targets: [mainStack, footer, clock]
+                    property: "opacity"
+                    duration: Kirigami.Units.veryLongDuration
+                    easing.type: Easing.InOutQuad
+                }
+            }
+        ]
     }
 
     Connections {

@@ -16,7 +16,7 @@ sha256sums=(SKIP)
 package() {
   cd "$pkgname"
   local dest="$pkgdir/usr/share/sddm/themes/ansalon"
-  install -Dm644 -t "$dest" *.qml metadata.desktop theme.conf default-logo.svg 5120x2880.png preview.png
+  install -Dm644 -t "$dest" *.qml metadata.desktop theme.conf default-logo.svg 5120x2880.png bosque_*.png preview.png
   install -Dm644 -t "$dest/faces" faces/.face.icon
   install -Dm644 -t "$pkgdir/usr/lib/sddm/sddm.conf.d" sddm.conf.d/ansalon.conf
 }

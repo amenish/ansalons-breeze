@@ -6,3 +6,5 @@ src/
 pkg/
 sddm-theme-ansalon/
 *.pkg.tar.*
+# planes de trabajo (no se versionan)
+docs/planes/
