@@ -5,6 +5,20 @@
 Tema para la pantalla de inicio de sesión [SDDM](https://github.com/sddm/sddm),
 derivado del tema Breeze de KDE Plasma y adaptado a Qt 6.
 
+## Características
+
+- **Fondo según la hora**: cuatro imágenes de un bosque (amanecer, día,
+  atardecer y noche) que se relevan con un fundido suave.
+- **Entrada gradual**: al arrancar aparece primero el reloj y después los
+  avatares y el formulario.
+- **Fondo nítido**: solo se desenfoca al elegir un avatar o al empezar a
+  escribir la contraseña.
+- **Distribución ajustable**: reloj arriba, avatares y formulario en el centro
+  y botones de suspender, reiniciar y apagar en el borde inferior; la altura
+  del reloj y del formulario se regula desde `theme.conf`.
+
+Todo se puede cambiar o desactivar en [Personalización](#personalización).
+
 ## Requisitos
 
 - `sddm` con soporte Qt 6 (`sddm-greeter-qt6`)
@@ -74,14 +88,6 @@ Los botones de suspender, reiniciar y apagar van fijos en el borde inferior.
 Para no tocar el archivo del paquete, crea `theme.conf.user` junto a
 `theme.conf` en el directorio del tema: SDDM lo lee encima y sobrescribe
 solo las claves que definas.
-
-## Publicar una nueva versión
-
-1. Cambia `Version=` en `metadata.desktop` y `pkgver=` en `PKGBUILD`.
-2. Haz commit, crea la etiqueta y súbela:
-   ```sh
-   git tag v1.2 && git push origin main v1.2
-   ```
 
 ## Licencia y créditos
 

@@ -1,6 +1,6 @@
 # Maintainer: Amenish <amenish@ansalon.es>
 pkgname=sddm-theme-ansalon
-pkgver=1.1
+pkgver=1.2
 pkgrel=1
 pkgdesc="Tema SDDM Ansalon basado en Breeze (Qt6)"
 arch=(any)
