@@ -41,6 +41,14 @@ Item {
     readonly property real desplazamientoReloj: height * opcionNumerica(config.clockOffset, 0) / 100
     readonly property real desplazamientoLogin: height * opcionNumerica(config.loginOffset, 0) / 100
 
+    // Tamaño (en puntos) del nombre que aparece bajo cada avatar
+    readonly property real tamanoNombreUsuario: opcionNumerica(config.userFontSize, Kirigami.Theme.defaultFont.pointSize)
+    Binding {
+        target: userListComponent.userList
+        property: "fontSize"
+        value: root.tamanoNombreUsuario
+    }
+
     // Fondo según la hora: amanecer, día, atardecer y noche
     property int hora: new Date().getHours()
     readonly property url fondoActual: {

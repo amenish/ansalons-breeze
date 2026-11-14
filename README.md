@@ -67,6 +67,7 @@ Las opciones están en `theme.conf` (`[General]`):
 | `blurOnInteraction` | `true` / `false`         | El fondo solo se desenfoca al elegir avatar o teclear; con `false` queda siempre nítido |
 | `clockOffset` | % del alto de pantalla         | Baja (positivo) o sube (negativo) el reloj |
 | `loginOffset` | % del alto de pantalla         | Baja o sube avatares y formulario, que se mueven juntos |
+| `userFontSize` | puntos                        | Tamaño del nombre bajo cada avatar |
 
 Los botones de suspender, reiniciar y apagar van fijos en el borde inferior.
 
