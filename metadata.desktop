@@ -1,0 +1,15 @@
+[SddmGreeterTheme]
+Name=Ansalon
+Description=Ansalon
+Author=Ansalon (basado en Breeze de KDE Visual Design Group)
+Copyright=(c) 2014, David Edmundson
+License=CC-BY-SA
+Type=sddm-theme
+Version=1.0
+Screenshot=preview.png
+MainScript=Main.qml
+ConfigFile=theme.conf
+Email=amenish@ansalon.es
+Theme-Id=ansalon
+Theme-API=2.0
+QtVersion=6
