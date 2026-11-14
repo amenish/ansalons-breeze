@@ -19,6 +19,23 @@ derivado del tema Breeze de KDE Plasma y adaptado a Qt 6.
 
 Todo se puede cambiar o desactivar en [Personalización](#personalización).
 
+## Fondo según la hora
+
+El tema elige el fondo al arrancar según la hora del sistema. Si la pantalla de
+inicio de sesión sigue abierta cuando cambia la franja, el fondo nuevo releva
+al anterior con un fundido de dos segundos.
+
+| Amanecer · 06:00–09:00 | Día · 09:00–18:00 |
+|:---:|:---:|
+| ![Fondo de amanecer](bosque_amanecer.png) | ![Fondo de día](bosque_dia.png) |
+| **Atardecer · 18:00–21:00** | **Noche · 21:00–06:00** |
+| ![Fondo de atardecer](bosque_atardecer.png) | ![Fondo de noche](bosque_noche.png) |
+
+Las horas de cada franja y las imágenes se cambian en `theme.conf`
+(`dawnHour`, `dayHour`, `duskHour`, `nightHour` y `backgroundDawn`,
+`backgroundDay`, `backgroundDusk`, `backgroundNight`). Con
+`timeBackground=false` se usa siempre la imagen de `background`.
+
 ## Requisitos
 
 - `sddm` con soporte Qt 6 (`sddm-greeter-qt6`)
